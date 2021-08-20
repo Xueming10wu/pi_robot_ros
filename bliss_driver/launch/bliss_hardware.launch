@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- bliss -->
+  <!-- IP地址 -->
+  <!-- <arg name="bliss_ip" default="192.168.30.100" /> -->
+  <arg name="bliss_ip" default="192.168.30.100" />
+  <!-- 端口 -->
+  <arg name= "bliss_port" default="8080"/>
+
+  <node ns="/bliss" pkg="bliss_driver" type="main_ros" name="bliss_driver_node" respawn="false" output="screen">
+  <!--<node ns="/bliss" pkg="bliss_driver" type="main" name="bliss_driver_node" respawn="false">-->
+    <param name="bliss_ip" type="string" value="$(arg bliss_ip)"/>
+    <param name="bliss_port" type="int" value="$(arg bliss_port)"/>
+
+  </node>
+</launch>
