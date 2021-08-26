@@ -1,4 +1,4 @@
 # bliss_robot_ros
-小派机械臂控制器ROS上位机
+小派机械臂控制器ROS驱动
 
-smallarm robot   ROS上位机程序
+smallarm robot   ROS驱动
