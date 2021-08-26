@@ -1,0 +1,16 @@
+<launch>
+  <arg name="model" />
+  <arg name="gui" default="true" />
+
+  <param name="robot_description" textfile="$(find tgr_arm_description)/urdf/tgr_arm.urdf" />
+  <param name="use_gui" value="$(arg gui)" />
+
+  <node if="$(arg gui)" name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" />
+
+  <!-- <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" /> -->
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tgr_arm_description)/config/urdf.rviz"/>
+
+</launch>

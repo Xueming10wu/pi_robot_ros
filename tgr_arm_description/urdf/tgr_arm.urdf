@@ -1,0 +1,204 @@
+<?xml version="1.0"?>
+<robot name="tgr_arm">
+    <link name="link0">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0.078" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link0.STL" />
+            </geometry>
+            <material name="gray">
+                <color rgba="0.75 0.75 0.75 1"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0.078" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link0.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="joint0" type="revolute">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
+        <parent link="link0"/>
+        <child link="link1"/>
+    </joint>
+
+    <link name="link1">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link1.STL" />
+            </geometry>
+            <material name="gray">
+                <color rgba="0.75 0.75 0.75 1"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link1.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+    
+    <joint name="joint1" type="revolute">
+        <origin xyz="0 0 0.2609" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
+        <parent link="link1"/>
+        <child link="link2"/>
+    </joint>
+
+    <link name="link2">
+        <visual>
+            <origin xyz="0 0.0032 0" rpy="1.5708 0 0" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link2.STL" />
+            </geometry>
+            <material name="gray">
+                <color rgba="0.75 0.75 0.75 1"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0.0032 0" rpy="1.5708 0 0" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link2.STL" />
+            </geometry>
+        </collision>
+    </link>
+    
+
+    <joint name="joint2" type="revolute">
+        <origin xyz="0 0 0.245" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
+        <parent link="link2"/>
+        <child link="link3"/>
+    </joint>
+
+    <link name="link3">
+        <visual>
+            <origin xyz="0 0 0" rpy="1.5708 -0.026 0" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link3.STL" />
+            </geometry>
+            <material name="gray">
+                <color rgba="0.75 0.75 0.75 1"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="1.5708 -0.026 0" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link3.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="joint3" type="revolute">
+        <origin xyz="0.085 0 0" rpy="0 0 0"/>
+        <axis xyz="1 0 0"/>
+        <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
+        <parent link="link3"/>
+        <child link="link4"/>
+    </joint>
+
+    <link name="link4">
+        <visual>
+            <origin xyz="0.145  0 0" rpy="0 -1.5708 3.1415926" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link4.STL" />
+            </geometry>
+            <material name="gray">
+                <color rgba="0.75 0.75 0.75 1"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0.145  0 0" rpy="0 -1.5708 3.1415926" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link4.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+
+
+    <joint name="joint4" type="revolute">
+        <origin xyz="0.145 0 0" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
+        <parent link="link4"/>
+        <child link="link5"/>
+    </joint>
+
+
+    <link name="link5">
+        <visual>
+            <origin xyz="0 0 0" rpy="1.5708 0 0" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link5.STL" />
+            </geometry>
+            <material name="gray">
+                <color rgba="0.75 0.75 0.75 1"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="1.5708 0 0" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link5.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+
+    <joint name="joint5" type="revolute">
+        <origin xyz="0 -0.00018 -0.068" rpy="0 3.1415926 0"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
+        <parent link="link5"/>
+        <child link="link6"/>
+    </joint>
+
+    <link name="link6">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0.7854" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link6.STL" />
+            </geometry>
+            <material name="gray">
+                <color rgba="0.75 0.75 0.75 1"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0.7854" />
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/link6.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+
+
+
+<!--
+    <link name="kinect_link">
+        <visual>
+            <origin xyz="0 0.016  0" rpy="-1.5708 0 3.1415926"/>
+            <geometry>
+                <mesh filename="package://tgr_arm_description/meshes/kinect.dae" />
+            </geometry>
+        </visual>
+    </link>
+
+    <joint name="kinect_joint" type="fixed">
+        <origin xyz="0.3 0.4 0.3" rpy="-1.83255 0 3.1415926"/>
+        <parent link="link1"/>
+        <child link="kinect_link"/>
+    </joint>
+-->
+
+</robot>
