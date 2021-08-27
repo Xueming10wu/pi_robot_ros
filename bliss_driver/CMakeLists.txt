@@ -7,8 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   control_msgs
   joint_state_publisher
-  moveit_msgs
   robot_state_publisher
+  moveit_msgs
   roscpp
   sensor_msgs
   std_msgs
@@ -39,17 +39,17 @@ include_directories(
 
 
 # ROS
-add_executable(main_ros
+add_executable(bliss_main
   include/bliss_driver/common.h
   include/bliss_driver/BlissRobot.h
   include/bliss_driver/BlissRobotRos.h
   src/common.cpp
   src/BlissRobot.cpp
   src/BlissRobotRos.cpp
-  src/main_ros.cpp
+  src/bliss_main.cpp
 )
-add_dependencies(main_ros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(main_ros
+add_dependencies(bliss_main ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(bliss_main
   ${catkin_LIBRARIES} -lpthread
 )
 

@@ -46,12 +46,11 @@ struct UART_InitTypeDef
 struct PWM
 {
     //PSC ARR CCR1有效位数都为16位数，即需要控制在0-0xffff之间
-    int32_t PSC;       // PRC，预分频器系数
-    int32_t ARR;       // ARR，自动重载寄存器
-    int32_t CCR1;      // CCR1，捕获/比较寄存器1，只使用通道1
-    int32_t Position;  // Position，执行脉冲的数量，只有此位不为0时有效，可为负数
+    int32_t PSC;        // PRC，预分频器系数
+    int32_t ARR;        // ARR，自动重载寄存器
+    int32_t CCR1;       // CCR1，捕获/比较寄存器1，只使用通道1
+    int32_t PluseCount; // 执行脉冲的数量，只有此位不为0时有效，可为负数
 };
-
 
 //状态值
 enum
@@ -72,9 +71,11 @@ enum
     PIN0_OFF = 0x0d,           //GPIO_0低电平
     PIN1_ON = 0x0e,            //GPIO_1高电平
     PIN1_OFF = 0x0f,           //GPIO_1低电平
-    TOGGLE_ENABLE_PINS = 0x10, //ENABLE使能翻转
-    RETURN = 0x11,              //返回零点
-    JOINTS_COUNT = 0x12        //设置关节数量
+    TOGGLE_ENABLE_PINS = 0x10, //ENABLE使能翻转，包括夹具，可以做到失力和使能的切换
+    RETURN = 0x11,             //返回零点
+    JOINTS_COUNT = 0x12,       //设置关节数量，默认为6轴，每次连接非6轴机械臂之后2s才能调用此命令，比较影响效率，尽量不要使用此接口，
+                               //如果使用7轴、8轴，可以联系控制器售后，直接在出场时设计成默认7轴的机械臂控制器
+    LOCATION_SETTING = 0x13    //手动设置location的数值，给当前机械臂位置赋值，用于机械臂位置校准,通过location对象即可
 } ROBOTSTATE;
 
 class BlissRobot
@@ -168,23 +169,24 @@ public:
     //设置可动关节数量
     void joints_count();
 
+    //手动设置LOCATION，给当前机械臂位置赋值，用于机械臂位置校准,通过location_setting对象进行
+    //但是必须在ros机械臂完全停止运动的时候进行
+    void location_setting();
+
     //接口控制数据
     //struct Point fake_trajectory[1024];
 
-    uint16_t NumberOfPoints;              //轨迹点的数量
-    struct Point trajectory[512];         //路径点，f4 512,   h7 1024
-    struct Location location;             //当前机械臂末端位置和状态,用于数据反馈
-    struct UART_InitTypeDef uart_setting; //串口设置对象
+    uint16_t NumberOfPoints;                 //轨迹点的数量
+    struct Point trajectory[512];            //路径点，f4 512,   h7 1024
+    struct Location location;                //当前机械臂末端位置和状态,用于数据反馈
+    struct Location location_setting_handle; //机械臂位置设置实例
+    struct UART_InitTypeDef uart_setting;    //串口设置对象
+    struct PWM pwm_handle;                   //pwm实例
 
-    struct PWM pwm_handle;                //pwm实例
-
-
-    volatile int usart_rx_len;       //串口接收数据长度
-    volatile int usart_tx_len;       //串口发送数据长度
-    uint8_t usartRXBuffer[256];      //串口接收缓存区
-    uint8_t usartTXBuffer[256];      //串口发送缓存区
-
-
+    volatile int usart_rx_len;  //串口接收数据长度
+    volatile int usart_tx_len;  //串口发送数据长度
+    uint8_t usartRXBuffer[256]; //串口接收缓存区
+    uint8_t usartTXBuffer[256]; //串口发送缓存区
 
 private:
     uint8_t CRC_Recv();
@@ -198,7 +200,7 @@ private:
     string serverIP; //服务程序IP地址
     int serverPort;  //服务程序端口号
 
-    bool isConnected; //是否连接  true已连接  false未连接
+    bool isConnected;          //是否连接  true已连接  false未连接
     volatile bool sendSuccess; //发送成功标志位
 
     volatile uint16_t recv_len; //接收长度
@@ -214,8 +216,6 @@ private:
 
     uint8_t recvBuffer[1024]; //网络接收缓存区
     uint8_t sendBuffer[2048]; //网络发送缓存区
-
-
 };
 
 #endif //BLISSROBOT_H

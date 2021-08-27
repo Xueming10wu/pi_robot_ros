@@ -495,7 +495,7 @@ void BlissRobot::usart_recv()
 {
     /**
      * 长度信息       数据       CRC
-     *    0         1-256      257
+     *    0         1-255      256
      * 
      * 共258字节长度，数据段数据最多有255位有效，其余为0
     **/
@@ -565,7 +565,7 @@ void BlissRobot::toggle_enable_pins()
     sendModul();
 }
 
-//编码器归零
+//编码器归零，通过usart进行操作
 void BlissRobot::encoder_reset()
 {
 }
@@ -578,5 +578,17 @@ void BlissRobot::joints_count()
     sendBuffer[1] = JOINTS_COUNT;
     sendBuffer[2] = 6; //6个关节
     cout << "JOINTS_COUNT\n";
+    sendModul();
+}
+
+//手动设置LOCATION，给当前机械臂位置赋值，用于机械臂位置校准,通过location_setting实例进行设置，然后再调用此函数
+//但是必须在ros机械臂完全停止运动的时候进行，同时建议在调用此函数前进行
+void BlissRobot::location_setting()
+{
+    send_len = 3 + LocationTCPDataLength;
+    sendBuffer[0] = Sequence;
+    sendBuffer[1] = LOCATION_SETTING;
+    memcpy(sendBuffer  + 2, &location_setting_handle, LocationTCPDataLength);
+    cout << "LOCATION_SETTING\n";
     sendModul();
 }

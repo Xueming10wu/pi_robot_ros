@@ -43,6 +43,7 @@ BlissRobotRos::BlissRobotRos()
 
     //功能
     extra_features_msg.Tag = 0;
+    extra_features_msg.Position.resize(6);
 
     //重要参数
     //旋转+180°(+3.1415926)，需要的节拍
@@ -136,7 +137,7 @@ void BlissRobotRos::extraFeaturesCB(const bliss_driver::ExtraFeaturesConstPtr &m
         blissRobotPtr->pwm_handle.PSC = msg->PSC;
         blissRobotPtr->pwm_handle.ARR = msg->ARR;
         blissRobotPtr->pwm_handle.CCR1 = msg->CCR1;
-        blissRobotPtr->pwm_handle.Position = msg->Position;
+        blissRobotPtr->pwm_handle.PluseCount = msg->PluseCount;
         //发送pwm数据
         blissRobotPtr->pwm_start();
         break;
@@ -145,22 +146,6 @@ void BlissRobotRos::extraFeaturesCB(const bliss_driver::ExtraFeaturesConstPtr &m
         //关闭pwm
         blissRobotPtr->pwm_stop();
         break;
-
-        // case 0:
-        //     //关闭串口
-        //     blissRobotPtr->usart_stop();
-        //     sleep(1);
-        //     //开启Location上传
-        //     blissRobotPtr->upload_start();
-        //     break;
-
-        // case 1:
-        //     //先关闭Location上传
-        //     blissRobotPtr->upload_stop();
-        //     sleep(1);
-        //     //获取编码器数据
-        //     blissRobotPtr->usart_start();
-        //     break;
 
     case RETURN:
         //调用函数
@@ -187,6 +172,21 @@ void BlissRobotRos::extraFeaturesCB(const bliss_driver::ExtraFeaturesConstPtr &m
         blissRobotPtr->toggle_enable_pins();
         break;
 
+    case LOCATION_SETTING:
+        //设置当前角度脉冲数值,必须要在机械臂完全停止运动的时候使用这个功能
+        blissRobotPtr->location_setting_handle.state = LOCATION_SETTING;
+        
+        //6轴
+        blissRobotPtr->location_setting_handle.position[0] = msg->Position[0];
+        blissRobotPtr->location_setting_handle.position[1] = msg->Position[1];
+        blissRobotPtr->location_setting_handle.position[2] = msg->Position[2];
+        blissRobotPtr->location_setting_handle.position[3] = msg->Position[3];
+        blissRobotPtr->location_setting_handle.position[4] = msg->Position[4];
+        blissRobotPtr->location_setting_handle.position[5] = msg->Position[5];
+
+        //调用API
+        blissRobotPtr->location_setting();
+        break;
     default:
         break;
     }
@@ -485,11 +485,15 @@ void BlissRobotRos::return_to_zero()
 
     //获取编码器数据
 
+
+
+
+
     //关闭串口
-    blissRobotPtr->usart_stop();
+    //blissRobotPtr->usart_stop();
 
     sleep(1);
 
     //开启Location上传
-    blissRobotPtr->upload_start();
+    //blissRobotPtr->upload_start();
 }
