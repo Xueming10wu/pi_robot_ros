@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- tgr_arm -->
+  <!-- IP地址 -->
+  <!-- <arg name="tgr_arm_ip" default="192.168.30.100" /> -->
+  <arg name="tgr_arm_ip" default="192.168.31.236" />
+  <!-- 端口 -->
+  <arg name= "tgr_arm_port" default="8080"/>
+
+  <node ns="/tgr_arm" pkg="tgr_arm_driver" type="tgr_arm_main" name="tgr_arm_driver_node" respawn="false" output="screen">
+  <!--<node ns="/tgr_arm" pkg="tgr_arm_driver" type="main" name="tgr_arm_driver_node" respawn="false">-->
+    <param name="tgr_arm_ip" type="string" value="$(arg tgr_arm_ip)"/>
+    <param name="tgr_arm_port" type="int" value="$(arg tgr_arm_port)"/>
+
+  </node>
+</launch>
