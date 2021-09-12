@@ -364,9 +364,9 @@ void TgrArmRobotRos::executeCB(const control_msgs::FollowJointTrajectoryGoalCons
     ros_result.error_code = ros_result.SUCCESSFUL;
     as->setSucceeded(ros_result);
 
-    std::cout << "路径执行完成" << std::endl;
-    std::cout << "预计使用" << (double)duration_total / 1000000 << "s, 实际使用"
-              << (double)duration_total_actual / 1000000 << "s" << std::endl;
+    // std::cout << "路径执行完成" << std::endl;
+    // std::cout << "预计使用" << (double)duration_total / 1000000 << "s, 实际使用"
+    //           << (double)duration_total_actual / 1000000 << "s" << std::endl;
 }
 
 //向ros系统中更新关节状态
@@ -413,7 +413,7 @@ void TgrArmRobotRos::return_to_zero()
     //根据编码器工厂进行通信设计，如果编码器是被动方式，数据放入到缓存中
     char s[18] = "Hello world ros!\n";
     tgrArmRobotPtr->usart_tx_len = 17;
-    memcpy(tgrArmRobotPtr->usartRXBuffer, s, tgrArmRobotPtr->usart_tx_len);
+    memcpy(tgrArmRobotPtr->usartTXBuffer, s, tgrArmRobotPtr->usart_tx_len);
 
     //调用发送
     tgrArmRobotPtr->usart_send();

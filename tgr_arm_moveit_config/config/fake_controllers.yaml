@@ -1,5 +1,5 @@
 controller_list:
-  - name: fake_tgr_arm_controller
+  - name: fake_manipulator_controller
     joints:
       - joint0
       - joint1
@@ -8,5 +8,5 @@ controller_list:
       - joint4
       - joint5
 initial:  # Define initial robot poses.
-  - group: tgr_arm
+  - group: manipulator
     pose: zero

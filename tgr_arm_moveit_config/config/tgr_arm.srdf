@@ -9,11 +9,11 @@
     <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
     <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
     <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
-    <group name="tgr_arm">
+    <group name="manipulator">
         <chain base_link="link0" tip_link="link6"/>
     </group>
     <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
-    <group_state name="zero" group="tgr_arm">
+    <group_state name="zero" group="manipulator">
         <joint name="joint0" value="0"/>
         <joint name="joint1" value="0"/>
         <joint name="joint2" value="0"/>
@@ -21,12 +21,20 @@
         <joint name="joint4" value="0"/>
         <joint name="joint5" value="0"/>
     </group_state>
-    <group_state name="home" group="tgr_arm">
+    <group_state name="home" group="manipulator">
         <joint name="joint0" value="0"/>
         <joint name="joint1" value="0"/>
         <joint name="joint2" value="0.026"/>
         <joint name="joint3" value="0"/>
         <joint name="joint4" value="0"/>
+        <joint name="joint5" value="0"/>
+    </group_state>
+    <group_state name="forward" group="manipulator">
+        <joint name="joint0" value="0"/>
+        <joint name="joint1" value="0.785"/>
+        <joint name="joint2" value="0"/>
+        <joint name="joint3" value="0"/>
+        <joint name="joint4" value="-0.785"/>
         <joint name="joint5" value="0"/>
     </group_state>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
