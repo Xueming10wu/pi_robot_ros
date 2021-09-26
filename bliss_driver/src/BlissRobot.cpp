@@ -61,6 +61,14 @@ void BlissRobot::startConstruction()
     cout << "连接成功\n";
 }
 
+
+//断开网络
+void BlissRobot::closeClient()
+{
+    cout << "断开连接" << endl;
+    close(client_fd);
+}
+
 //启动服务器，并接收数据
 void BlissRobot::listening()
 {

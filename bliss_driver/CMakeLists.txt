@@ -52,4 +52,3 @@ add_dependencies(bliss_main ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTE
 target_link_libraries(bliss_main
   ${catkin_LIBRARIES} -lpthread
 )
-

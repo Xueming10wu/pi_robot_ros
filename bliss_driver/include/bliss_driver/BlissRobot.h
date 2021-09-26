@@ -26,8 +26,8 @@ struct Point
 
 struct Location
 {
-    volatile int32_t position[8];
-    volatile int8_t state;
+    int32_t position[8];
+    int8_t state;
 };
 
 //自STM32库函数中引入，除波特率外，通常赋值0即可  除Mode外，其他可直接参考STM32库函数
@@ -101,6 +101,9 @@ public:
 
     //开始连接
     void startConstruction();
+
+    //断开网络链接
+    void closeClient();
 
     //启动服务器，并接收数据
     void listening();

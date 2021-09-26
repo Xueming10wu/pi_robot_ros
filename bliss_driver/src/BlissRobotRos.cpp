@@ -151,6 +151,16 @@ void BlissRobotRos::extraFeaturesCB(const bliss_driver::ExtraFeaturesConstPtr &m
         //调用函数
         return_to_zero();
         break;
+    
+    case 0:
+        //关闭串口
+        blissRobotPtr->usart_stop();
+
+        //sleep(1);
+
+        //开启Location上传
+        blissRobotPtr->upload_start();
+        break;
 
     case PIN0_ON:
         blissRobotPtr->pin0_on();
@@ -420,17 +430,17 @@ void BlissRobotRos::return_to_zero()
     //先关闭Location上传
     blissRobotPtr->upload_stop();
 
-    sleep(1);
+    //sleep(1);
 
     //获取编码器数据
     blissRobotPtr->usart_start();
 
-    sleep(1);
+    //sleep(1);
 
     //根据编码器工厂进行通信设计，如果编码器是被动方式，数据放入到缓存中
     char s[18] = "Hello world ros!\n";
     blissRobotPtr->usart_tx_len = 17;
-    memcpy(blissRobotPtr->usartRXBuffer, s, blissRobotPtr->usart_tx_len);
+    memcpy(blissRobotPtr->usartTXBuffer, s, blissRobotPtr->usart_tx_len);
 
     //调用发送
     blissRobotPtr->usart_send();
@@ -492,7 +502,7 @@ void BlissRobotRos::return_to_zero()
     //关闭串口
     //blissRobotPtr->usart_stop();
 
-    sleep(1);
+    //sleep(1);
 
     //开启Location上传
     //blissRobotPtr->upload_start();
