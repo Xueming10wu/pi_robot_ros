@@ -43,7 +43,7 @@ class MoveItIkDemo:
         rospy.sleep(1)
                
         # 设置机械臂工作空间中的目标位姿，位置使用x、y、z坐标描述，
-        # 姿态使用四元数描述，基于base_link坐标系
+        # 姿态使用四元数描述，基于link0坐标系
         target_pose = PoseStamped()
         target_pose.header.frame_id = reference_frame
         target_pose.header.stamp = rospy.Time.now()     

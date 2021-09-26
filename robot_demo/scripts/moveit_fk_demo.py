@@ -19,8 +19,8 @@ class MoveItFkDemo:
         arm.set_goal_joint_tolerance(0.01)
 
         # 设置允许的最大速度和加速度
-        arm.set_max_acceleration_scaling_factor(0.02)
-        arm.set_max_velocity_scaling_factor(0.02)
+        #arm.set_max_acceleration_scaling_factor(0.01)
+        arm.set_max_velocity_scaling_factor(1.0)
         
         # 控制机械臂先回到初始化位置
         arm.set_named_target('zero')
@@ -28,7 +28,7 @@ class MoveItFkDemo:
         rospy.sleep(1)
          
         # 设置机械臂的目标位置，使用六轴的位置数据进行描述（单位：弧度）
-        joint_positions = [0.391410, -0.676384, -0.376217, 0.0, 1.052834, 0.454125]
+        joint_positions = [1.57, 0.0, 0.0, 0.0, 0.0, 0.0]
         arm.set_joint_value_target(joint_positions)
                  
         # 控制机械臂完成运动

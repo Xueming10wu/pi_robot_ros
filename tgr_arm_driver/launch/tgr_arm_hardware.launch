@@ -3,7 +3,8 @@
   <!-- tgr_arm -->
   <!-- IP地址 -->
   <!-- <arg name="tgr_arm_ip" default="192.168.30.100" /> -->
-  <arg name="tgr_arm_ip" default="192.168.31.239" />
+  <!-- <arg name="tgr_arm_ip" default="192.168.31.239" /> -->
+  <arg name="tgr_arm_ip" default="192.168.31.4" />
   <!-- 端口 -->
   <arg name= "tgr_arm_port" default="8080"/>
 

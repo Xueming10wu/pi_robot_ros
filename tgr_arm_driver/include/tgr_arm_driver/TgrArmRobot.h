@@ -16,7 +16,7 @@
 
 struct Point
 {
-    volatile int32_t duration;              //运行时间
+    volatile int32_t duration;              //运行时间，单位为1us
     volatile int16_t numberOfFullPeriod[8]; //0xffff周期的数量
     volatile int16_t restPeriod[8];         //最后余下的周期，单位为1us，只有period >= 0xffff时，才有效
     volatile int16_t numberOfPeriod[8];     //pwm周期数
@@ -101,6 +101,9 @@ public:
 
     //开始连接
     void startConstruction();
+
+    //断开网络
+    void closeClient();
 
     //启动服务器，并接收数据
     void listening();

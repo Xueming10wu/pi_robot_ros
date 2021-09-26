@@ -3,7 +3,6 @@
 
 import rospy, sys
 import moveit_commander
-from moveit_commander import MoveGroupCommander
 from geometry_msgs.msg import Pose
 from copy import deepcopy
 
@@ -19,7 +18,7 @@ class MoveItCartesianDemo:
         cartesian = rospy.get_param('~cartesian', True)
                       
         # 初始化需要使用move group控制的机械臂中的arm group
-        arm = MoveGroupCommander('manipulator')
+        arm = moveit_commander.MoveGroupCommander('manipulator')
         
         # 当运动规划失败后，允许重新规划
         arm.allow_replanning(True)
@@ -43,7 +42,7 @@ class MoveItCartesianDemo:
         arm.go()
         rospy.sleep(1)
                                                
-        # 获取当前位姿数据最为机械臂运动的起始位姿
+        # 获取当前位姿数据作为机械臂运动的起始位姿
         start_pose = arm.get_current_pose(end_effector_link).pose
 
         # 初始化路点列表

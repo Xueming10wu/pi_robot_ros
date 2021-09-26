@@ -8,11 +8,11 @@ project(robot_demo)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  rospy
   moveit_msgs
   moveit_ros_perception
   moveit_ros_planning_interface
-  roscpp
-  rospy
   trajectory_msgs
 )
 

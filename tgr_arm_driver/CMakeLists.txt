@@ -52,4 +52,3 @@ add_dependencies(tgr_arm_main ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPOR
 target_link_libraries(tgr_arm_main
   ${catkin_LIBRARIES} -lpthread
 )
-
