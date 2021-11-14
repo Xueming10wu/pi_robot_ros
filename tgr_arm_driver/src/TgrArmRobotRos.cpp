@@ -1,7 +1,7 @@
 #include "TgrArmRobotRos.h"
 
 //机械臂实例
-TgrArmRobot * tgrArmRobotPtr = new TgrArmRobot();
+TgrArmRobot *tgrArmRobotPtr = new TgrArmRobot();
 
 //TgrArmRobot 监听友元函数
 void listening(TgrArmRobot *p)
@@ -46,12 +46,12 @@ TgrArmRobotRos::TgrArmRobotRos()
 
     //重要参数
     //旋转+180°(+3.1415926)，需要的节拍
-    plu2angel[0] = 43200;
-    plu2angel[1] = 115200;
-    plu2angel[2] = 76800;
+    plu2angel[0] = 21600; //43200;
+    plu2angel[1] = -42200; //84400;        //115200;
+    plu2angel[2] = -28112; //56225;       //76800;
     plu2angel[3] = 60800;
-    plu2angel[4] = 45000;
-    plu2angel[5] = 60800;
+    plu2angel[4] = -51000;
+    plu2angel[5] = 60800; //未定
 
     //零点参数
     zeroPlu[0] = 0;
@@ -60,7 +60,6 @@ TgrArmRobotRos::TgrArmRobotRos()
     zeroPlu[3] = 0;
     zeroPlu[4] = 0;
     zeroPlu[5] = 0;
-
 
     //启动
     tgrArmRobotPtr->startConstruction();
@@ -102,6 +101,8 @@ TgrArmRobotRos::~TgrArmRobotRos()
 {
 }
 
+
+
 //extraFeatures功能回调函数
 void TgrArmRobotRos::extraFeaturesCB(const tgr_arm_driver::ExtraFeaturesConstPtr &msg)
 {
@@ -113,6 +114,16 @@ void TgrArmRobotRos::extraFeaturesCB(const tgr_arm_driver::ExtraFeaturesConstPtr
     case STOPPED:
         //紧急制动
         tgrArmRobotPtr->robot_stop();
+        break;
+
+    case UPLOAD_START:
+        //重新开启Location数据的上传，默认开启
+        tgrArmRobotPtr->upload_start();
+        break;
+
+    case UPLOAD_STOP:
+        //关闭Location数据的上传，默认开启
+        tgrArmRobotPtr->upload_stop();
         break;
 
     case PWM_START:
@@ -128,11 +139,6 @@ void TgrArmRobotRos::extraFeaturesCB(const tgr_arm_driver::ExtraFeaturesConstPtr
     case PWM_STOP:
         //关闭pwm
         tgrArmRobotPtr->pwm_stop();
-        break;
-
-    case RETURN:
-        //调用函数
-        return_to_zero();
         break;
 
     case PIN0_ON:
@@ -155,10 +161,20 @@ void TgrArmRobotRos::extraFeaturesCB(const tgr_arm_driver::ExtraFeaturesConstPtr
         tgrArmRobotPtr->toggle_enable_pins();
         break;
 
+    
+    case RS485_ENABLE:      //17
+        tgrArmRobotPtr->rs485_enable();
+        break;
+    
+    case RS485_DISABLE:     //18
+        tgrArmRobotPtr->rs485_disable();
+        break;
+    
+
     case LOCATION_SETTING:
         //设置当前角度脉冲数值,必须要在机械臂完全停止运动的时候使用这个功能
         tgrArmRobotPtr->location_setting_handle.state = LOCATION_SETTING;
-        
+
         //6轴
         tgrArmRobotPtr->location_setting_handle.position[0] = msg->Position[0];
         tgrArmRobotPtr->location_setting_handle.position[1] = msg->Position[1];
@@ -170,6 +186,20 @@ void TgrArmRobotRos::extraFeaturesCB(const tgr_arm_driver::ExtraFeaturesConstPtr
         //调用API
         tgrArmRobotPtr->location_setting();
         break;
+
+    case RETURN:        //21
+        //调用函数
+        return_to_zero();
+        break;
+
+    case TEMPERAR:      //22
+        //关闭串口
+        tgrArmRobotPtr->usart_stop();
+        sleep(1);
+        //开启Location上传
+        tgrArmRobotPtr->upload_start();
+        break;
+
     default:
         break;
     }
@@ -242,7 +272,6 @@ void TgrArmRobotRos::executeCB(const control_msgs::FollowJointTrajectoryGoalCons
                             tgrArmRobotPtr->trajectory[index].numberOfPeriod[i] = tgrArmRobotPtr->trajectory[index - 1].numberOfPeriod[i];
                             tgrArmRobotPtr->trajectory[index].period[i] = tgrArmRobotPtr->trajectory[index - 1].period[i];
 
-
                             numberOfValidDuration++;
                         }
                     }
@@ -297,11 +326,11 @@ void TgrArmRobotRos::executeCB(const control_msgs::FollowJointTrajectoryGoalCons
                 {
                     //周期 = 运行时间/脉冲差
                     tgrArmRobotPtr->trajectory[index].period[i] = abs(duration_mean /
-                                                                     (tgrArmRobotPtr->trajectory[index].position[i] - tgrArmRobotPtr->trajectory[index - 1].position[i]));
+                                                                      (tgrArmRobotPtr->trajectory[index].position[i] - tgrArmRobotPtr->trajectory[index - 1].position[i]));
 
                     //计算出 周期为 period 的周期数
                     tgrArmRobotPtr->trajectory[index].numberOfPeriod[i] = duration_mean %
-                                                                         (tgrArmRobotPtr->trajectory[index].position[i] - tgrArmRobotPtr->trajectory[index - 1].position[i]);
+                                                                          (tgrArmRobotPtr->trajectory[index].position[i] - tgrArmRobotPtr->trajectory[index - 1].position[i]);
 
                     //对于period超过0xffff，进行一些处理
                     if (tgrArmRobotPtr->trajectory[index].period[i] > 0xffff)
@@ -400,19 +429,25 @@ void TgrArmRobotRos::reorder(trajectory_msgs::JointTrajectory trajectory)
 //机械臂根据编码器数据归零，由于有不同编码器，此部分通常由用户完成
 void TgrArmRobotRos::return_to_zero()
 {
+    cout << "return_to_zero\n";
+    
+    //使能485
+    tgrArmRobotPtr->rs485_enable();
+    usleep(100000);
+
     //先关闭Location上传
     tgrArmRobotPtr->upload_stop();
+    usleep(100000);
 
-    sleep(1);
-
-    //获取编码器数据
+    //开启串口通信
     tgrArmRobotPtr->usart_start();
-
-    sleep(1);
+    usleep(100000);
 
     //根据编码器工厂进行通信设计，如果编码器是被动方式，数据放入到缓存中
-    char s[18] = "Hello world ros!\n";
-    tgrArmRobotPtr->usart_tx_len = 17;
+    uint8_t s[] = {0x01, 0x03, 0x10, 0x00, 0x00, 0x02, 0x0c, 0xcb};
+
+
+    tgrArmRobotPtr->usart_tx_len = 8;
     memcpy(tgrArmRobotPtr->usartTXBuffer, s, tgrArmRobotPtr->usart_tx_len);
 
     //调用发送
@@ -432,16 +467,6 @@ void TgrArmRobotRos::return_to_zero()
 
     //先进行清零
     memset(&tgrArmRobotPtr->trajectory[0], 0, PointSize);
-
-    //设置执行位置
-    // tgrArmRobotPtr->trajectory[0].position[0] = 0;
-    // tgrArmRobotPtr->trajectory[0].position[1] = 0;
-    // tgrArmRobotPtr->trajectory[0].position[2] = 0;
-    // tgrArmRobotPtr->trajectory[0].position[3] = 0;
-    // tgrArmRobotPtr->trajectory[0].position[4] = 0;
-    // tgrArmRobotPtr->trajectory[0].position[5] = 0;
-    // tgrArmRobotPtr->trajectory[0].position[6] = 0;
-    // tgrArmRobotPtr->trajectory[0].position[7] = 0;
 
     //无需运动的关节，将于10ms关闭
     tgrArmRobotPtr->trajectory[0].period = 10000;        
@@ -468,6 +493,32 @@ void TgrArmRobotRos::return_to_zero()
 
     //获取编码器数据
 
+    //关闭串口
+    //tgrArmRobotPtr->usart_stop();
+
+    //sleep(1);
+
+    //开启Location上传
+    //tgrArmRobotPtr->upload_start();
+}
+
+//发送串口
+void TgrArmRobotRos::usart_send()
+{
+    //根据编码器工厂进行通信设计，如果编码器是被动方式，数据放入到缓存中
+    char s[18] = "Hello world ros!\n";
+    tgrArmRobotPtr->usart_tx_len = 17;
+    memcpy(tgrArmRobotPtr->usartTXBuffer, s, tgrArmRobotPtr->usart_tx_len);
+
+    //调用发送
+    tgrArmRobotPtr->usart_send();
+
+    sleep(1);
+}
+
+//关闭串口
+void TgrArmRobotRos::usart_close()
+{
     //关闭串口
     tgrArmRobotPtr->usart_stop();
 

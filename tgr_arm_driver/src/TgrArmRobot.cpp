@@ -61,7 +61,6 @@ void TgrArmRobot::startConstruction()
     cout << "连接成功\n";
 }
 
-
 //断开网络
 void TgrArmRobot::closeClient()
 {
@@ -183,6 +182,11 @@ void TgrArmRobot::listening()
     close(client_fd);
 }
 
+//心跳检测
+void TgrArmRobot::keepAlive()
+{
+}
+
 //传输轨迹数据
 void TgrArmRobot::sendTrajectory()
 {
@@ -295,6 +299,15 @@ void TgrArmRobot::sendModul()
             }
             usleep(1000);
         }
+
+        //最多重传5次，否则视为断开链接
+        if (count > 5)
+        {
+            closeClient();
+            ros::shutdown();
+            exit(0);
+        }
+        
     }
     Sequence++;
     Sequence %= 0xff; //0~254之间
@@ -520,8 +533,15 @@ void TgrArmRobot::usart_recv()
     {
         cout << (char)usartRXBuffer[i];
     }
+    cout << hex << endl;
+    for (int i = 0; i < usart_rx_len; i++)
+    {
+        cout << (int)usartRXBuffer[i] << " ";
+    }
     cout << endl;
 }
+
+
 
 //PIN0高电平
 void TgrArmRobot::pin0_on()
@@ -573,6 +593,29 @@ void TgrArmRobot::toggle_enable_pins()
     sendModul();
 }
 
+
+//RS485使能
+void TgrArmRobot::rs485_enable()
+{
+    send_len = 3;
+    sendBuffer[0] = Sequence;
+    sendBuffer[1] = RS485_ENABLE;
+    cout << "RS485_ENABLE\n";
+    sendModul();
+}
+
+
+//RS485失能
+void TgrArmRobot::rs485_disable()
+{
+    send_len = 3;
+    sendBuffer[0] = Sequence;
+    sendBuffer[1] = RS485_DISABLE;
+    cout << "RS485_DISABLE\n";
+    sendModul();
+}
+
+
 //编码器归零，通过usart进行操作
 void TgrArmRobot::encoder_reset()
 {
@@ -596,7 +639,7 @@ void TgrArmRobot::location_setting()
     send_len = 3 + LocationTCPDataLength;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = LOCATION_SETTING;
-    memcpy(sendBuffer  + 2, &location_setting_handle, LocationTCPDataLength);
+    memcpy(sendBuffer + 2, &location_setting_handle, LocationTCPDataLength);
     cout << "LOCATION_SETTING\n";
     sendModul();
 }

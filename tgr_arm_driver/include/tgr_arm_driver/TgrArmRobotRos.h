@@ -37,6 +37,12 @@ public:
     //机械臂根据编码器数据归零，由于有不同编码器，此部分通常由用户完成
     void return_to_zero();
 
+    //发送串口
+    void usart_send();
+
+    //关闭串口
+    void usart_close();
+
 private:
 
 
