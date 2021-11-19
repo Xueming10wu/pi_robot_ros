@@ -169,6 +169,27 @@ void TgrArmRobot::listening()
         case USART_TO_TCP_SIZE:
             //接收到串口数据
             usart_recv();
+
+            //如果为编码器的数据长度的话
+            if (usart_rx_len == 11)
+            {
+                //校验
+                if(checkEncoderData(usartRXBuffer))
+                {
+                    int _index = getEncoderID(usartRXBuffer);
+
+                    //获取编码器数据
+                    encoderValue[_index] = getEncoderValue(usartRXBuffer);
+                    
+                    //encoderValue[getEncoderID(usartRXBuffer)] = getEncoderValue(usartRXBuffer);
+                     std::cout << "编码器" << _index << "数值为" << encoderValue[_index] << std::endl;
+                }
+                else
+                {
+                    std::cout << "编码器数据校验失败" << std::endl;
+                }
+            }
+            
             break;
 
         default:
@@ -538,7 +559,7 @@ void TgrArmRobot::usart_recv()
     {
         cout << (int)usartRXBuffer[i] << " ";
     }
-    cout << endl;
+    cout << dec << endl;
 }
 
 
@@ -586,9 +607,11 @@ void TgrArmRobot::pin1_off()
 //ENABLE使能翻转
 void TgrArmRobot::toggle_enable_pins()
 {
-    send_len = 3;
+    send_len = 5;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = TOGGLE_ENABLE_PINS;
+    sendBuffer[2] = (enable_pins >> 8) & 0xff;
+    sendBuffer[3] = enable_pins & 0xff;
     cout << "TOGGLE_ENABLE_PINS\n";
     sendModul();
 }

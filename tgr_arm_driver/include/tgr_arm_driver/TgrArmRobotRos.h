@@ -43,6 +43,9 @@ public:
     //关闭串口
     void usart_close();
 
+    //测试专用
+    void test();
+
 private:
 
 

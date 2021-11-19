@@ -43,12 +43,27 @@ add_executable(tgr_arm_main
   include/tgr_arm_driver/common.h
   include/tgr_arm_driver/TgrArmRobot.h
   include/tgr_arm_driver/TgrArmRobotRos.h
+  include/tgr_arm_driver/YodaEncoder.h
   src/common.cpp
   src/TgrArmRobot.cpp
   src/TgrArmRobotRos.cpp
+  src/YodaEncoder.cpp
   src/tgr_arm_main.cpp
 )
 add_dependencies(tgr_arm_main ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(tgr_arm_main
   ${catkin_LIBRARIES} -lpthread
+)
+
+
+add_executable(crc_test
+  include/tgr_arm_driver/common.h
+  include/tgr_arm_driver/YodaEncoder.h
+  src/common.cpp
+  src/YodaEncoder.cpp
+  src/crc_test.cpp
+)
+add_dependencies(crc_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(crc_test
+  ${catkin_LIBRARIES}
 )

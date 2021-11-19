@@ -2,6 +2,7 @@
 #define TGRARMROBOT_H
 
 #include "common.h"
+#include "YodaEncoder.h"         //编码器库
 
 #define PointSize 116            //每个Point轨迹点所占的字节数量   8x(3x2+2x4)+4 = 116
 #define FullPointInTCP 12        //每个TCP数据包中，包含的最大字节数量
@@ -85,6 +86,7 @@ enum
 //归零编码
 #define RETURN 21
 #define TEMPERAR 22
+#define TEST 23
 
 
 class TgrArmRobot
@@ -197,8 +199,17 @@ public:
 
     //接口控制数据
     //struct Point fake_trajectory[1024];
-
     uint16_t NumberOfPoints;                 //轨迹点的数量
+
+    uint16_t enable_pins;
+    /* 
+     * 使能引脚，包括pwm夹爪，机械臂各个关节
+     * enable_pins格式
+     * 0b 00000000 00000000
+     *    -------p 76543210
+     *    -----夹爪  关节序号
+     */
+
     struct Point trajectory[512];            //路径点，f4 512,   h7 1024
     struct Location location;                //当前机械臂末端位置和状态,用于数据反馈
     struct Location location_setting_handle; //机械臂位置设置实例
@@ -209,6 +220,8 @@ public:
     volatile int usart_tx_len;  //串口发送数据长度
     uint8_t usartRXBuffer[256]; //串口接收缓存区
     uint8_t usartTXBuffer[256]; //串口发送缓存区
+
+    int encoderValue[8];    //17bit绝对值编码器数据
 
 private:
     uint8_t CRC_Recv();

@@ -46,7 +46,7 @@ TgrArmRobotRos::TgrArmRobotRos()
 
     //重要参数
     //旋转+180°(+3.1415926)，需要的节拍
-    plu2angel[0] = 21600; //43200;
+    plu2angel[0] = 21600;  //43200;
     plu2angel[1] = -42200; //84400;        //115200;
     plu2angel[2] = -28112; //56225;       //76800;
     plu2angel[3] = 60800;
@@ -100,8 +100,6 @@ TgrArmRobotRos::TgrArmRobotRos()
 TgrArmRobotRos::~TgrArmRobotRos()
 {
 }
-
-
 
 //extraFeatures功能回调函数
 void TgrArmRobotRos::extraFeaturesCB(const tgr_arm_driver::ExtraFeaturesConstPtr &msg)
@@ -157,19 +155,36 @@ void TgrArmRobotRos::extraFeaturesCB(const tgr_arm_driver::ExtraFeaturesConstPtr
         tgrArmRobotPtr->pin1_off();
         break;
 
-    case TOGGLE_ENABLE_PINS:
+    case TOGGLE_ENABLE_PINS:    //12
+        /*
+         * 关节序号  0   1   2   3   4   5   6   7     8pwm    全部
+         * 输入数值  1   2   4   8   16  32  64  128   256     (511)0x1ff
+         * 
+         * 可以进行各种使能组合,不过为了方便,建议在终端操作时,采用上述几个数值
+         */
+
+        tgrArmRobotPtr->enable_pins = msg->PSC & 0x01ff;
+        cout << "tgrArmRobotPtr->enable_pins " << tgrArmRobotPtr->enable_pins << endl;
         tgrArmRobotPtr->toggle_enable_pins();
         break;
 
-    
-    case RS485_ENABLE:      //17
+    case USART_START: //13
+        //开启串口通信
+        tgrArmRobotPtr->usart_start();
+        break;
+
+    case USART_STOP: //14
+        //关闭USART通信中断
+        tgrArmRobotPtr->usart_stop();
+        break;
+
+    case RS485_ENABLE: //17
         tgrArmRobotPtr->rs485_enable();
         break;
-    
-    case RS485_DISABLE:     //18
+
+    case RS485_DISABLE: //18
         tgrArmRobotPtr->rs485_disable();
         break;
-    
 
     case LOCATION_SETTING:
         //设置当前角度脉冲数值,必须要在机械臂完全停止运动的时候使用这个功能
@@ -187,17 +202,21 @@ void TgrArmRobotRos::extraFeaturesCB(const tgr_arm_driver::ExtraFeaturesConstPtr
         tgrArmRobotPtr->location_setting();
         break;
 
-    case RETURN:        //21
+    case RETURN: //21
         //调用函数
         return_to_zero();
         break;
 
-    case TEMPERAR:      //22
+    case TEMPERAR: //22
         //关闭串口
         tgrArmRobotPtr->usart_stop();
         sleep(1);
         //开启Location上传
         tgrArmRobotPtr->upload_start();
+        break;
+
+    case TEST:
+        test();
         break;
 
     default:
@@ -430,25 +449,29 @@ void TgrArmRobotRos::reorder(trajectory_msgs::JointTrajectory trajectory)
 void TgrArmRobotRos::return_to_zero()
 {
     cout << "return_to_zero\n";
-    
+
     //使能485
     tgrArmRobotPtr->rs485_enable();
     usleep(100000);
 
     //先关闭Location上传
-    tgrArmRobotPtr->upload_stop();
-    usleep(100000);
+    // tgrArmRobotPtr->upload_stop();
+    // usleep(100000);
 
     //开启串口通信
     tgrArmRobotPtr->usart_start();
     usleep(100000);
 
     //根据编码器工厂进行通信设计，如果编码器是被动方式，数据放入到缓存中
-    uint8_t s[] = {0x01, 0x03, 0x10, 0x00, 0x00, 0x02, 0x0c, 0xcb};
+    // uint8_t s[] = {0x01, 0x03, 0x10, 0x00, 0x00, 0x02, 0x0c, 0xcb};
+    // tgrArmRobotPtr->usart_tx_len = 8;
+    // 0x01 0x83 0x02 0xc0 0xf1
 
+    // uint8_t s[] = {0xc0, 0xf1};
+    // tgrArmRobotPtr->usart_tx_len = 2;
+    // 无反馈数据
 
-    tgrArmRobotPtr->usart_tx_len = 8;
-    memcpy(tgrArmRobotPtr->usartTXBuffer, s, tgrArmRobotPtr->usart_tx_len);
+    //memcpy(tgrArmRobotPtr->usartTXBuffer, s, tgrArmRobotPtr->usart_tx_len);
 
     //调用发送
     tgrArmRobotPtr->usart_send();
@@ -526,4 +549,53 @@ void TgrArmRobotRos::usart_close()
 
     //开启Location上传
     tgrArmRobotPtr->upload_start();
+}
+
+//测试
+void TgrArmRobotRos::test()
+{
+    //根据编码器工厂进行通信设计，如果编码器是被动方式，数据放入到缓存中
+    
+    tgrArmRobotPtr->usart_tx_len = 8;
+    //0x01 0x83 0x02 0xc0 0xf1
+
+    // uint8_t s[] = {0xc0, 0xf1};
+    // tgrArmRobotPtr->usart_tx_len = 2;
+    // 无反馈数据
+
+    //uint8_t s[8] = {0x01, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc0, 0xcb};
+    
+    //uint8_t s[8] = {0x02, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc0, 0xf8};
+    //正常
+    
+    //uint8_t s[8] = {0x03, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc1, 0x29};
+    //正常
+
+    //uint8_t s[8] = {0x04, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc0, 0x9e};
+    //正常
+
+    //uint8_t s[8] = {0x05, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc1, 0x4f};
+    
+
+    uint8_t s[8] = {0x06, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc1, 0x7c};
+    //正常
+
+    //int b = 0x0203100004f87b0000;//37114164550508937216
+    //int a = 0x8005;//(int)32773
+
+    cout << hex << endl;
+    for (int i = 0; i < tgrArmRobotPtr->usart_tx_len; i ++)
+    {
+        cout << "0x" << (int)s[i] << "  ";
+    }
+    cout << dec << endl;
+
+    memcpy(tgrArmRobotPtr->usartTXBuffer, s, tgrArmRobotPtr->usart_tx_len);
+
+    //调用发送
+    tgrArmRobotPtr->usart_send();
+
+    sleep(1);
+    
+    cout << "" << endl;
 }
