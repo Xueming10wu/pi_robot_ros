@@ -82,7 +82,7 @@
 
     <link name="link3">
         <visual>
-            <origin xyz="0 0 0" rpy="1.5708 -0.026 0" />
+            <origin xyz="0 0 0" rpy="1.5708 -1.5968 0" />
             <geometry>
                 <mesh filename="package://tgr_arm_description/meshes/link3.STL" />
             </geometry>
@@ -91,25 +91,32 @@
             </material>
         </visual>
         <collision>
-            <origin xyz="0 0 0" rpy="1.5708 -0.026 0" />
+            <origin xyz="0 0 0" rpy="1.5708 -1.5968 0" />
             <geometry>
                 <mesh filename="package://tgr_arm_description/meshes/link3.STL" />
             </geometry>
         </collision>
     </link>
 
-
     <joint name="joint3" type="revolute">
-        <origin xyz="0.085 0 0" rpy="0 0 0"/>
-        <axis xyz="1 0 0"/>
+        <origin xyz="0 0 0.085" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
         <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
         <parent link="link3"/>
         <child link="link4"/>
     </joint>
 
+    <!-- <joint name="joint3" type="revolute">
+        <origin xyz="0.085 0 0" rpy="0 0 0"/>
+        <axis xyz="1 0 0"/>
+        <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
+        <parent link="link3"/>
+        <child link="link4"/>
+    </joint> -->
+
     <link name="link4">
         <visual>
-            <origin xyz="0.145  0 0" rpy="0 -1.5708 3.1415926" />
+            <origin xyz="0  0 0.145" rpy="0 0 3.1415926" />
             <geometry>
                 <mesh filename="package://tgr_arm_description/meshes/link4.STL" />
             </geometry>
@@ -118,7 +125,7 @@
             </material>
         </visual>
         <collision>
-            <origin xyz="0.145  0 0" rpy="0 -1.5708 3.1415926" />
+            <origin xyz="0 0 0.145" rpy="0 0 3.1415926" />
             <geometry>
                 <mesh filename="package://tgr_arm_description/meshes/link4.STL" />
             </geometry>
@@ -128,7 +135,7 @@
 
 
     <joint name="joint4" type="revolute">
-        <origin xyz="0.145 0 0" rpy="0 0 0"/>
+        <origin xyz="0 0 0.145" rpy="0 0 0"/>
         <axis xyz="0 1 0"/>
         <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
         <parent link="link4"/>
@@ -138,7 +145,7 @@
 
     <link name="link5">
         <visual>
-            <origin xyz="0 0 0" rpy="1.5708 0 0" />
+            <origin xyz="0 0 0" rpy="1.5708 3.1415926 0" />
             <geometry>
                 <mesh filename="package://tgr_arm_description/meshes/link5.STL" />
             </geometry>
@@ -147,7 +154,7 @@
             </material>
         </visual>
         <collision>
-            <origin xyz="0 0 0" rpy="1.5708 0 0" />
+            <origin xyz="0 0 0" rpy="1.5708 3.1415926 0" />
             <geometry>
                 <mesh filename="package://tgr_arm_description/meshes/link5.STL" />
             </geometry>
@@ -156,7 +163,7 @@
 
 
     <joint name="joint5" type="revolute">
-        <origin xyz="0 -0.00018 -0.068" rpy="0 3.1415926 0"/>
+        <origin xyz="0 0 0.11" rpy="0 0 0"/>
         <axis xyz="0 0 1"/>
         <limit lower="-3.1415926" upper="3.1415926" effort="100" velocity="1.5708" />
         <parent link="link5"/>
@@ -179,7 +186,7 @@
                 <mesh filename="package://tgr_arm_description/meshes/link6.STL" />
             </geometry>
         </collision>
-    </link>
+    </link> -->
 
 
 

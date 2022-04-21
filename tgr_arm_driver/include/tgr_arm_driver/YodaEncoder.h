@@ -1,6 +1,8 @@
 #ifndef YODAENCODER_H
 #define YODAENCODER_H
 
+//17位绝对值编码器
+
 #include "common.h"
 
 
@@ -15,7 +17,7 @@ bool checkEncoderData(uint8_t *_pBuf);
 int getEncoderID(uint8_t *_pBuf);
 
 //获取编码器数值，字符串长度必须为11位
-int getEncoderValue(uint8_t *_pBuf);
+int getEncoderAngle(uint8_t *_pBuf);
 
 
 #endif

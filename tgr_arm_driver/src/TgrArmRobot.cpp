@@ -15,6 +15,34 @@ TgrArmRobot::~TgrArmRobot()
 {
 }
 
+//17位，范围为0~0x1ffff
+extern int yodaEncoderRange;
+
+void TgrArmRobot::InitJointParam()
+{
+    //重要参数
+    //旋转+180°(+3.1415926)，需要的节拍
+    plu2angel[0] = -21600; //43200;
+    plu2angel[1] = -42200; //84400;        //115200;
+    plu2angel[2] = -28112; //56225;       //76800;
+    plu2angel[3] = -60800;
+    plu2angel[4] = -44000; //51000
+    plu2angel[5] = -60800; //未定
+
+    //零点参数
+    zeroPlu[0] = 0;
+    zeroPlu[1] = 0;
+    zeroPlu[2] = 0;
+    zeroPlu[3] = 0;
+    zeroPlu[4] = 0;
+    zeroPlu[5] = 0;
+
+    //固定变量,用于机械臂回归零点
+    encoderHalfRange = yodaEncoderRange / 2;
+
+    //32绿色  31红色
+}
+
 //设置IP
 void TgrArmRobot::setServerIP(string s)
 {
@@ -30,6 +58,8 @@ void TgrArmRobot::setServerPort(int port)
 //开始连接
 void TgrArmRobot::startConstruction()
 {
+    InitJointParam();
+
 #ifndef USE_ROS
     signal(SIGINT, MyFunctions::stop);
 #endif
@@ -59,6 +89,36 @@ void TgrArmRobot::startConstruction()
     //序号从1开始，绝对不可以从0开始，因为会让下位机误判认为是已经接受过的数据，那么下位机只会反馈数据，不会执行这个包的命令
     Sequence = 1;
     cout << "连接成功\n";
+
+    //编码器数据清零
+    memset(encoderAngle, 0, sizeof(encoderAngle));
+
+    //rs485标志位，默认为关闭
+    rs485_flag = false;
+
+    //usart标志位，默认为关闭
+    usart_flag = false;
+
+    //零点时，编码器的数据
+    //因为同一型号的机械臂，在安装时也有不可避免的误差，所以每个参数都需要参考出厂标签
+    encoderAngleZero[0] = 0x1a24c;
+    encoderAngleZero[1] = 0xb8c8;
+    encoderAngleZero[2] = 0xc71c;
+    encoderAngleZero[3] = 0x1bdc3;
+    encoderAngleZero[4] = 0x1c8cb;
+    encoderAngleZero[5] = 0x1cc7c;
+
+    //编码器安装方向
+    encoderPositiveOrNegative[0] = 1;
+    encoderPositiveOrNegative[1] = 1;
+    encoderPositiveOrNegative[2] = 1;
+    encoderPositiveOrNegative[3] = 1;
+    encoderPositiveOrNegative[4] = -1;
+    encoderPositiveOrNegative[5] = 1;
+
+    //107084 47304 50972 114115 114863 117884
+
+
 }
 
 //断开网络
@@ -93,8 +153,9 @@ void TgrArmRobot::listening()
         switch (recv_len)
         {
         case 2:
+
             //接收下位机确认信息
-            std::cout << "共接收: " << std::dec << recv_len << "b" << std::endl;
+            //std::cout << "共接收: " << std::dec << recv_len << "b" << std::endl;
 
             if (!sendSuccess)
             { //如果已经成功，则没有再次进行校验的必要了，而且序列号等数据必定改动
@@ -112,19 +173,21 @@ void TgrArmRobot::listening()
                     }
                     if (recvBuffer[1] != send_check)
                     {
+                        std::cout << "共接收: " << std::dec << recv_len << "b" << std::endl;
                         cout << "check不匹配" << endl;
                     }
                 }
             }
 
-            cout << "校验结果 ";
             if (sendSuccess)
             {
-                cout << "成功" << endl;
+#ifdef SUCCESS_INFO
+                cout << "校验结果 成功" << endl;
+#endif
             }
             else
             {
-                cout << "失败" << endl;
+                cout << "校验结果 失败" << endl;
             }
             break;
 
@@ -174,22 +237,23 @@ void TgrArmRobot::listening()
             if (usart_rx_len == 11)
             {
                 //校验
-                if(checkEncoderData(usartRXBuffer))
+                if (checkEncoderData(usartRXBuffer))
                 {
-                    int _index = getEncoderID(usartRXBuffer);
+                    int _index = getEncoderID(usartRXBuffer) - 1;
 
                     //获取编码器数据
-                    encoderValue[_index] = getEncoderValue(usartRXBuffer);
-                    
-                    //encoderValue[getEncoderID(usartRXBuffer)] = getEncoderValue(usartRXBuffer);
-                     std::cout << "编码器" << _index << "数值为" << encoderValue[_index] << std::endl;
+                    encoderAngle[_index] = getEncoderAngle(usartRXBuffer);
+                    //encoderAngle[getEncoderID(usartRXBuffer)] = getEncoderAngle(usartRXBuffer);
+#ifdef SUCCESS_INFO
+                    std::cout << "编码器" << _index + 1 << "数值为" << encoderAngle[_index] << std::endl;
+#endif
                 }
                 else
                 {
                     std::cout << "编码器数据校验失败" << std::endl;
                 }
             }
-            
+
             break;
 
         default:
@@ -212,25 +276,32 @@ void TgrArmRobot::keepAlive()
 void TgrArmRobot::sendTrajectory()
 {
     //发送长度数据
+#ifdef SUCCESS_INFO
     cout << "send New   NumberOfPoints:" << NumberOfPoints << endl;
+#endif
     send_len = 5;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = NEW;
     sendBuffer[2] = (NumberOfPoints >> 8) & 0xff;
     sendBuffer[3] = NumberOfPoints & 0xff;
     sendModul(); //调用发送模块发送数据
+#ifdef SUCCESS_INFO
     cout << "send New over\n";
+#endif
 
     //发送轨迹数据，一个数据点的大小为116byte，一个数据包最大1395(TCP最大1460)，最多一次发送12个数据点
     NumberOfFullPackages = NumberOfPoints / FullPointInTCP;
     NumberOfRestPoints = NumberOfPoints % FullPointInTCP;
-
+#ifdef SUCCESS_INFO
     cout << "满包数量:" << (int)NumberOfFullPackages << ", 余包包含的点数:" << (int)NumberOfRestPoints << endl;
+#endif
     writePointIndex = 0;
     sendBuffer[1] = PENDING;
     if (NumberOfFullPackages > 0)
     {
+#ifdef SUCCESS_INFO
         cout << "发送满包轨迹数据" << endl;
+#endif
         send_len = FullTCPLength; //1395
         for (int i = 0; i < NumberOfFullPackages; i++)
         {
@@ -242,7 +313,6 @@ void TgrArmRobot::sendTrajectory()
 
             writePointIndex += FullPointInTCP;
 
-            cout << endl;
             sendModul(); //调用发送模块发送数据
         }
     }
@@ -250,7 +320,9 @@ void TgrArmRobot::sendTrajectory()
     //余下的轨迹数据
     if (NumberOfRestPoints > 0)
     {
+#ifdef SUCCESS_INFO
         cout << "发送余包轨迹数据" << endl;
+#endif
         send_len = NumberOfRestPoints * PointSize + 3;
         sendBuffer[0] = Sequence;
         memcpy(sendBuffer + 2, &trajectory[writePointIndex], send_len - 3);
@@ -262,7 +334,9 @@ void TgrArmRobot::sendTrajectory()
     send_len = 3;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = RUNING;
+#ifdef SUCCESS_INFO
     cout << "RUNING\n";
+#endif
     sendModul(); //调用发送模块发送数据
 }
 
@@ -309,7 +383,11 @@ void TgrArmRobot::sendModul()
 #endif
     {
         send(client_fd, sendBuffer, send_len, 0);
-        cout << "第" << count++ << "次发送数据\n";
+
+        if (count != 0)
+        {
+            cout << "第" << count++ << "次发送数据\n";
+        }
 
         //最多等待1s，否则重传
         for (int i = 0; i < 1000; i++)
@@ -328,7 +406,6 @@ void TgrArmRobot::sendModul()
             ros::shutdown();
             exit(0);
         }
-        
     }
     Sequence++;
     Sequence %= 0xff; //0~254之间
@@ -445,7 +522,9 @@ void TgrArmRobot::upload_start()
     send_len = 3;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = UPLOAD_START;
+#ifdef SUCCESS_INFO
     cout << "UPLOAD_START\n";
+#endif
     sendModul(); //调用发送模块发送数据
 }
 
@@ -456,7 +535,9 @@ void TgrArmRobot::upload_stop()
     send_len = 3;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = UPLOAD_STOP;
+#ifdef SUCCESS_INFO
     cout << "UPLOAD_STOP\n";
+#endif
     sendModul(); //调用发送模块发送数据
 }
 
@@ -468,7 +549,9 @@ void TgrArmRobot::pwm_start()
     sendBuffer[0] = Sequence;
     sendBuffer[1] = PWM_START;
     memcpy(sendBuffer + 2, &pwm_handle, sizeof(pwm_handle));
+#ifdef SUCCESS_INFO
     cout << "PWM_START\n";
+#endif
     sendModul(); //调用发送模块发送数据
 }
 
@@ -478,7 +561,9 @@ void TgrArmRobot::pwm_stop()
     send_len = 3;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = PWM_STOP;
+#ifdef SUCCESS_INFO
     cout << "PWM_STOP\n";
+#endif
     sendModul(); //调用发送模块发送数据
 }
 
@@ -505,8 +590,12 @@ void TgrArmRobot::usart_start()
     sendBuffer[0] = Sequence;
     sendBuffer[1] = USART_START;
     memcpy(sendBuffer + 2, &uart_setting, sizeof(uart_setting));
+#ifdef SUCCESS_INFO
     cout << "USART_START\n";
+#endif
     sendModul();
+
+    usart_flag = true;
 }
 
 //关闭USART通信中断
@@ -515,8 +604,12 @@ void TgrArmRobot::usart_stop()
     send_len = 3;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = USART_STOP;
+#ifdef SUCCESS_INFO
     cout << "USART_STOP\n";
+#endif
     sendModul();
+
+    usart_flag = false;
 }
 
 //发送数据到串口
@@ -528,7 +621,9 @@ void TgrArmRobot::usart_send()
     sendBuffer[1] = USART_SEND;
     //向下发送的数据可以不定长度，仅仅放入串口数据即可
     memcpy(sendBuffer + 2, usartTXBuffer, usart_tx_len);
+#ifdef SUCCESS_INFO
     cout << "USART_SEND\n";
+#endif
     sendModul();
 }
 
@@ -548,6 +643,7 @@ void TgrArmRobot::usart_recv()
     //把数据保存在串口缓存中
     memcpy(usartRXBuffer, recvBuffer + 1, usart_rx_len);
 
+#ifdef SUCCESS_INFO
     //打印
     cout << "接收到串口数据 长度为 : " << usart_rx_len << endl;
     for (int i = 0; i < usart_rx_len; i++)
@@ -560,9 +656,8 @@ void TgrArmRobot::usart_recv()
         cout << (int)usartRXBuffer[i] << " ";
     }
     cout << dec << endl;
+#endif
 }
-
-
 
 //PIN0高电平
 void TgrArmRobot::pin0_on()
@@ -616,17 +711,19 @@ void TgrArmRobot::toggle_enable_pins()
     sendModul();
 }
 
-
 //RS485使能
 void TgrArmRobot::rs485_enable()
 {
     send_len = 3;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = RS485_ENABLE;
+#ifdef SUCCESS_INFO
     cout << "RS485_ENABLE\n";
+#endif
     sendModul();
-}
 
+    rs485_flag = true;
+}
 
 //RS485失能
 void TgrArmRobot::rs485_disable()
@@ -634,14 +731,12 @@ void TgrArmRobot::rs485_disable()
     send_len = 3;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = RS485_DISABLE;
+#ifdef SUCCESS_INFO
     cout << "RS485_DISABLE\n";
+#endif
     sendModul();
-}
 
-
-//编码器归零，通过usart进行操作
-void TgrArmRobot::encoder_reset()
-{
+    rs485_flag = false;
 }
 
 //设置可动关节数量
@@ -665,4 +760,140 @@ void TgrArmRobot::location_setting()
     memcpy(sendBuffer + 2, &location_setting_handle, LocationTCPDataLength);
     cout << "LOCATION_SETTING\n";
     sendModul();
+}
+
+extern uint8_t yodaEncoderDataFrame[6][8]; //引入编码器数据帧
+
+void TgrArmRobot::getEncoders()
+{
+    if ((!usart_flag) || (!rs485_flag))
+    {
+        //关闭巡回资源
+        upload_stop();
+
+        //使能485
+        rs485_enable();
+        usleep(100000);
+
+        //开启串口通信
+        usart_start();
+        usleep(100000);
+    }
+
+    //根据编码器工厂进行通信设计，如果编码器是被动方式，数据放入到缓存中
+    usart_tx_len = 8;
+
+    for (int i = 0; i < 6; i++)
+    {
+        memcpy(usartTXBuffer, yodaEncoderDataFrame[i], usart_tx_len);
+        usart_send();  //调用发送
+        usleep(50000); //50ms
+    }
+
+    // //关闭串口通信
+    usart_stop();
+    usleep(100000);
+
+    // //关闭485
+    rs485_disable();
+    usleep(100000);
+
+    //恢复巡回资源
+    upload_start();
+    usleep(100000);
+
+    //#ifdef SUCCESS_INFO
+    //输出数据
+    cout << "编码器数据为:";
+    for (int i = 0; i < 6; i++)
+    {
+        cout << encoderAngle[i] << " ";
+    }
+    cout << endl;
+
+    for (int i = 0; i < 6; i++)
+    {
+        cout << hex << encoderAngle[i] << " ";
+    }
+    cout << dec << endl
+         << endl;
+    //#endif
+}
+
+//通过对编码器的读取，获取机器人各个关节的角度
+void TgrArmRobot::getPose()
+{
+    //等待获得编码器数据
+    getEncoders();
+
+    //计算脉冲数量
+    for (int i = 0; i < 6; i++)
+    {
+        //旋转角度需要小于180度，怎么近怎么转
+        temp_a = encoderAngle[i] - encoderAngleZero[i];
+        if (abs(temp_a) > encoderHalfRange)
+        {
+            if (temp_a > encoderHalfRange)
+            {
+                temp_a -= yodaEncoderRange;
+            }
+            else if (temp_a < -encoderHalfRange)
+            {
+                temp_a += yodaEncoderRange;
+            }
+        }
+
+        // 移动角度 = (当前编码器位置-编码器零点位置) * 2PI/编码器范围
+        // 脉冲数量 = (移动角度/PI) * 脉冲参数 =
+        // 2* (当前编码器位置-编码器零点位置) * 脉冲参数/编码器范围
+
+        temp_b = temp_a * plu2angel[i] * encoderPositiveOrNegative[i];
+        temp_c = temp_b / encoderHalfRange;
+
+        cout << "\033[31m第" << i << "应当移动\033[0m"
+             << temp_b << " " << temp_c << endl;
+
+        //存放获取到的位置信息
+        location_setting_handle.position[i] = temp_c;
+    }
+}
+
+void TgrArmRobot::return_to_zero()
+{
+    cout << "return_to_zero\n";
+
+    //设置一个执行点
+    NumberOfPoints = 1;
+
+    //先进行清零
+    memset(&trajectory[0], 0, PointSize);
+
+    //获得各个关节的脉冲角度信息，并存放在location_setting_handle中
+    getPose();
+
+    //计算脉冲数量
+    for (int i = 0; i < 6; i++)
+    {
+        trajectory[0].position[i] =  -location_setting_handle.position[i];
+    }
+
+    //无需运动的关节，将于10ms关闭
+    trajectory[0].period[0] = 1000;
+    trajectory[0].period[1] = 1000;
+    trajectory[0].period[2] = 1000;
+    trajectory[0].period[3] = 1000;
+    trajectory[0].period[4] = 1000;
+    trajectory[0].period[5] = 1000;
+
+    //设置执行速度，慢点稳点,5s恢复
+    trajectory[0].duration = 5000000;
+
+    //调用tgrArmRobot中的sendTrajectory进行发送数据的操作
+
+    //#ifdef SUCCESS_INFO
+    //printTrajectory();
+    //#endif
+
+    //发送数据
+    sendTrajectory();
 }

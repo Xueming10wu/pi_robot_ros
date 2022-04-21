@@ -44,22 +44,9 @@ TgrArmRobotRos::TgrArmRobotRos()
     extra_features_msg.Tag = 0;
     extra_features_msg.Position.resize(6);
 
-    //重要参数
-    //旋转+180°(+3.1415926)，需要的节拍
-    plu2angel[0] = 21600;  //43200;
-    plu2angel[1] = -42200; //84400;        //115200;
-    plu2angel[2] = -28112; //56225;       //76800;
-    plu2angel[3] = 60800;
-    plu2angel[4] = -51000;
-    plu2angel[5] = 60800; //未定
 
-    //零点参数
-    zeroPlu[0] = 0;
-    zeroPlu[1] = 0;
-    zeroPlu[2] = 0;
-    zeroPlu[3] = 0;
-    zeroPlu[4] = 0;
-    zeroPlu[5] = 0;
+
+
 
     //启动
     tgrArmRobotPtr->startConstruction();
@@ -81,6 +68,19 @@ TgrArmRobotRos::TgrArmRobotRos()
 
     ros::AsyncSpinner spinner(1);
     spinner.start();
+
+
+    //获取机器人各个关节的脉冲角度
+    tgrArmRobotPtr->getPose();
+
+    usleep(100000); //0.1s间隔
+
+    //写入到控制器中
+    tgrArmRobotPtr->location_setting();
+
+    //回归零点
+    //tgrArmRobotPtr->return_to_zero();
+
 
     //更新关节数据
     jointStateUpdate();
@@ -202,21 +202,28 @@ void TgrArmRobotRos::extraFeaturesCB(const tgr_arm_driver::ExtraFeaturesConstPtr
         tgrArmRobotPtr->location_setting();
         break;
 
-    case RETURN: //21
-        //调用函数
-        return_to_zero();
+
+    case GET_ENCODER: //21   //获取编码器数据
+        tgrArmRobotPtr->getEncoders();
         break;
 
-    case TEMPERAR: //22
+    case GET_POSE:    //22   //获取编码器数据
+        tgrArmRobotPtr->getPose();
+        usleep(1000);   //1ms
+        tgrArmRobotPtr->location_setting();
+        break;
+
+    case RETURN_ZERO: //23
+        //调用函数
+        tgrArmRobotPtr->return_to_zero();
+        break;
+
+    case TEMPERAR: //24
         //关闭串口
         tgrArmRobotPtr->usart_stop();
         sleep(1);
         //开启Location上传
         tgrArmRobotPtr->upload_start();
-        break;
-
-    case TEST:
-        test();
         break;
 
     default:
@@ -253,7 +260,7 @@ void TgrArmRobotRos::executeCB(const control_msgs::FollowJointTrajectoryGoalCons
             {
                 //获取位置信息，也是脉冲信息， 位置 = (物理角度 / PI) * 单位脉冲 + 零点偏移
                 tgrArmRobotPtr->trajectory[index].position[i] =
-                    (goal->trajectory.points[index].positions[i] * plu2angel[i]) / PI + zeroPlu[i];
+                    (goal->trajectory.points[index].positions[i] * tgrArmRobotPtr->plu2angel[i]) / PI + tgrArmRobotPtr->zeroPlu[i];
 
                 //分段获取速度信息
                 if (index == 0)
@@ -318,7 +325,7 @@ void TgrArmRobotRos::executeCB(const control_msgs::FollowJointTrajectoryGoalCons
                                 (goal->trajectory.points[index].positions[i] - goal->trajectory.points[index - 1].positions[i]) * 1000000 / goal->trajectory.points[index].velocities[i];
 
                             // tgrArmRobotPtr->trajectory[index].period[i] =
-                            //     abs((1000000 * PI) / goal->trajectory.points[index].velocities[i] / plu2angel[i]);
+                            //     abs((1000000 * PI) / goal->trajectory.points[index].velocities[i] / tgrArmRobotPtr->plu2angel[i]);
 
                             //记录有效关节数，防止一些关节不进行运动，而导致执行所需要的平均时间偏低
                             numberOfValidDuration++;
@@ -377,7 +384,9 @@ void TgrArmRobotRos::executeCB(const control_msgs::FollowJointTrajectoryGoalCons
         std::cout << "预计使用" << (double)duration_total / 1000000 << "s" << std::endl;
 
         //调用tgrArmRobot中的sendTrajectory进行发送数据的操作
+#ifdef SUCCESS_INFO
         tgrArmRobotPtr->printTrajectory();
+#endif
 
         tgrArmRobotPtr->sendTrajectory();
 
@@ -424,7 +433,7 @@ void TgrArmRobotRos::jointStateUpdate()
     {
         for (int i = 0; i < 6; i++)
         {
-            joint_msg.position[i] = (tgrArmRobotPtr->location.position[i] - zeroPlu[i]) * PI / plu2angel[i];
+            joint_msg.position[i] = (tgrArmRobotPtr->location.position[i] - tgrArmRobotPtr->zeroPlu[i]) * PI / tgrArmRobotPtr->plu2angel[i];
             ros_feedback.actual.positions[i] = joint_msg.position[i];
         }
         joint_msg.header.stamp = ros::Time::now();
@@ -445,85 +454,7 @@ void TgrArmRobotRos::reorder(trajectory_msgs::JointTrajectory trajectory)
 {
 }
 
-//机械臂根据编码器数据归零，由于有不同编码器，此部分通常由用户完成
-void TgrArmRobotRos::return_to_zero()
-{
-    cout << "return_to_zero\n";
 
-    //使能485
-    tgrArmRobotPtr->rs485_enable();
-    usleep(100000);
-
-    //先关闭Location上传
-    // tgrArmRobotPtr->upload_stop();
-    // usleep(100000);
-
-    //开启串口通信
-    tgrArmRobotPtr->usart_start();
-    usleep(100000);
-
-    //根据编码器工厂进行通信设计，如果编码器是被动方式，数据放入到缓存中
-    // uint8_t s[] = {0x01, 0x03, 0x10, 0x00, 0x00, 0x02, 0x0c, 0xcb};
-    // tgrArmRobotPtr->usart_tx_len = 8;
-    // 0x01 0x83 0x02 0xc0 0xf1
-
-    // uint8_t s[] = {0xc0, 0xf1};
-    // tgrArmRobotPtr->usart_tx_len = 2;
-    // 无反馈数据
-
-    //memcpy(tgrArmRobotPtr->usartTXBuffer, s, tgrArmRobotPtr->usart_tx_len);
-
-    //调用发送
-    tgrArmRobotPtr->usart_send();
-
-    sleep(1);
-
-    //等待获得编码器数据，然后进行执行，慢慢调整数据到零点位置
-    //
-    //
-    //
-    //
-
-    /*
-    //设置一个执行点
-    tgrArmRobotPtr->NumberOfPoints = 1;
-
-    //先进行清零
-    memset(&tgrArmRobotPtr->trajectory[0], 0, PointSize);
-
-    //无需运动的关节，将于10ms关闭
-    tgrArmRobotPtr->trajectory[0].period = 10000;        
-
-    //设置执行速度
-    tgrArmRobotPtr->trajectory[0].duration[0] = 5000;
-    tgrArmRobotPtr->trajectory[0].duration[1] = 5000;
-    tgrArmRobotPtr->trajectory[0].duration[2] = 5000;
-    tgrArmRobotPtr->trajectory[0].duration[3] = 5000;
-    tgrArmRobotPtr->trajectory[0].duration[4] = 5000;
-    tgrArmRobotPtr->trajectory[0].duration[5] = 5000;
-    tgrArmRobotPtr->trajectory[0].duration[6] = 5000;
-    tgrArmRobotPtr->trajectory[0].duration[7] = 5000;
-
-
-
-
-    //调用tgrArmRobot中的sendTrajectory进行发送数据的操作
-    tgrArmRobotPtr->printTrajectory();
-
-    //发送数据
-    tgrArmRobotPtr->sendTrajectory();
-    */
-
-    //获取编码器数据
-
-    //关闭串口
-    //tgrArmRobotPtr->usart_stop();
-
-    //sleep(1);
-
-    //开启Location上传
-    //tgrArmRobotPtr->upload_start();
-}
 
 //发送串口
 void TgrArmRobotRos::usart_send()
@@ -554,48 +485,5 @@ void TgrArmRobotRos::usart_close()
 //测试
 void TgrArmRobotRos::test()
 {
-    //根据编码器工厂进行通信设计，如果编码器是被动方式，数据放入到缓存中
     
-    tgrArmRobotPtr->usart_tx_len = 8;
-    //0x01 0x83 0x02 0xc0 0xf1
-
-    // uint8_t s[] = {0xc0, 0xf1};
-    // tgrArmRobotPtr->usart_tx_len = 2;
-    // 无反馈数据
-
-    //uint8_t s[8] = {0x01, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc0, 0xcb};
-    
-    //uint8_t s[8] = {0x02, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc0, 0xf8};
-    //正常
-    
-    //uint8_t s[8] = {0x03, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc1, 0x29};
-    //正常
-
-    //uint8_t s[8] = {0x04, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc0, 0x9e};
-    //正常
-
-    //uint8_t s[8] = {0x05, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc1, 0x4f};
-    
-
-    uint8_t s[8] = {0x06, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc1, 0x7c};
-    //正常
-
-    //int b = 0x0203100004f87b0000;//37114164550508937216
-    //int a = 0x8005;//(int)32773
-
-    cout << hex << endl;
-    for (int i = 0; i < tgrArmRobotPtr->usart_tx_len; i ++)
-    {
-        cout << "0x" << (int)s[i] << "  ";
-    }
-    cout << dec << endl;
-
-    memcpy(tgrArmRobotPtr->usartTXBuffer, s, tgrArmRobotPtr->usart_tx_len);
-
-    //调用发送
-    tgrArmRobotPtr->usart_send();
-
-    sleep(1);
-    
-    cout << "" << endl;
 }

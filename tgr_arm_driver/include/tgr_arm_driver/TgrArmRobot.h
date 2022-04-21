@@ -4,6 +4,8 @@
 #include "common.h"
 #include "YodaEncoder.h"         //编码器库
 
+//#define SUCCESS_INFO    1        //普通信息打印
+
 #define PointSize 116            //每个Point轨迹点所占的字节数量   8x(3x2+2x4)+4 = 116
 #define FullPointInTCP 12        //每个TCP数据包中，包含的最大字节数量
 #define FullTCPDataLength 1392   //116×12 = 1392
@@ -80,14 +82,16 @@ enum
     RS485_DISABLE = 18,      //关闭485芯片
 
     JOINTS_COUNT = 19,       //设置关节数量
-    LOCATION_SETTING = 20    //手动设置location的数值，给当前机械臂位置赋值，用于机械臂位置校准
+    LOCATION_SETTING = 20,    //手动设置location的数值，给当前机械臂位置赋值，用于机械臂位置校准
+
+    GET_ENCODER = 21,         //获取编码器数据
+    GET_POSE = 22,            //获取编码器数据
+    RETURN_ZERO = 23          //回归零点
 } ROBOTSTATE;
 
-//归零编码
-#define RETURN 21
-#define TEMPERAR 22
-#define TEST 23
 
+#define TEMPERAR 24
+#define TEST 25
 
 class TgrArmRobot
 {
@@ -119,6 +123,11 @@ public:
 
     //启动服务器，并接收数据
     void listening();
+
+    uint8_t CRC_Recv();
+    void CRC_Send();
+
+    void sendModul(); //确保发送成功的模块
 
     //心跳检测
     void keepAlive();
@@ -187,9 +196,6 @@ public:
     //RS485失能
     void rs485_disable();
 
-    //编码器归零，即将当前位置作为编码器零点位置，需要配合串口等基础指令
-    void encoder_reset();
-
     //设置可动关节数量
     void joints_count();
 
@@ -197,8 +203,20 @@ public:
     //但是必须在ros机械臂完全停止运动的时候进行
     void location_setting();
 
+    //获取机械臂各个编码器的数据
+    void getEncoders();
+
+    //通过对编码器的读取，获取机器人各个关节的角度，并写入控制器中
+    void getPose();
+
+    //返回0点
+    void return_to_zero();
+
+    //各个关节转180度需要的节拍
+    int plu2angel[6];
+    int zeroPlu[6];
+
     //接口控制数据
-    //struct Point fake_trajectory[1024];
     uint16_t NumberOfPoints;                 //轨迹点的数量
 
     uint16_t enable_pins;
@@ -210,9 +228,9 @@ public:
      *    -----夹爪  关节序号
      */
 
-    struct Point trajectory[512];            //路径点，f4 512,   h7 1024
+    struct Point trajectory[512];            //路径点，1代512 2代1024 3代8192
     struct Location location;                //当前机械臂末端位置和状态,用于数据反馈
-    struct Location location_setting_handle; //机械臂位置设置实例
+    struct Location location_setting_handle; //位置设置实例，同时，也可用于临时存放示教信息
     struct UART_InitTypeDef uart_setting;    //串口设置对象
     struct PWM pwm_handle;                   //pwm实例
 
@@ -221,13 +239,26 @@ public:
     uint8_t usartRXBuffer[256]; //串口接收缓存区
     uint8_t usartTXBuffer[256]; //串口发送缓存区
 
-    int encoderValue[8];    //17bit绝对值编码器数据
+    //tgr款特殊属性
+    int encoderAngle[6];    //17bit绝对值编码器数据
+    int encoderAngleZero[6];    //零点位置对应的编码器数据，每台设备有一些不同
+    int encoderPositiveOrNegative[6];   //编码器安装方向，引起潜在的正负问题，由此项数据解决
+
+    bool rs485_flag;        //rs485标志位，默认为关闭
+    bool usart_flag;        //usart标志位，默认为关闭
+
+
+    
+
+
 
 private:
-    uint8_t CRC_Recv();
-    void CRC_Send();
+    void InitJointParam();
 
-    void sendModul(); //确保发送成功的模块
+    int encoderHalfRange;  //固定变量,用于机械臂回归零点
+
+    int64_t temp_a, temp_b;            //临时变量
+    int temp_c;
 
     int client_fd;                 //tcp对象实例
     struct sockaddr_in serverAddr; //协议族

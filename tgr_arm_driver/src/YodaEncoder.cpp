@@ -75,6 +75,20 @@ uint16_t CRC16_MODBUS(uint8_t *_pBuf, int _usLen)
     return ((uint16_t)ucCRCHi << 8 | ucCRCLo);//拼成2字节 16位
 }
 
+
+
+
+uint8_t yodaEncoderDataFrame[6][8] = {
+	0x01, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc0, 0xcb,
+	0x02, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc0, 0xf8,
+	0x03, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc1, 0x29,
+	0x04, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc0, 0x9e,
+	0x05, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc1, 0x4f,
+	0x06, 0x03, 0x10, 0x00, 0x00, 0x02, 0xc1, 0x7c
+};
+
+int yodaEncoderRange = 0x20000;	//17位，范围为0~0x1ffff   131072
+
 bool checkEncoderData(uint8_t *_pBuf)
 {
 	int crc16 = ((_pBuf[9] << 8) | _pBuf[10]);
@@ -94,8 +108,8 @@ int getEncoderID(uint8_t *_pBuf)
 	return (int)_pBuf[0];
 }
 
-int getEncoderValue(uint8_t *_pBuf)
+int getEncoderAngle(uint8_t *_pBuf)
 {
-	int value = ((int)_pBuf[5] << 8) | (int)_pBuf[6] | (int)_pBuf[7] << 24 | (int)_pBuf[8] << 16;
-	return value;
+	int angle = ((int)_pBuf[5] << 8) | (int)_pBuf[6] | (int)_pBuf[7] << 24 | (int)_pBuf[8] << 16;
+	return angle;
 }

@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     int tgr_arm_port;
 
     //参数获取
-    nh.param<string>("tgr_arm_ip", tgr_arm_ip, "192.168.31.215");
+    nh.param<string>("tgr_arm_ip", tgr_arm_ip, "127.0.0.1");
     nh.param<int>("tgr_arm_port", tgr_arm_port, 8080);
 
     //准备连接

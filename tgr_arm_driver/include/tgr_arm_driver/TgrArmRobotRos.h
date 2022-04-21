@@ -34,9 +34,6 @@ public:
 	//重排序，urdf设计的顺序比较好，可以不用这个
 	void reorder(trajectory_msgs::JointTrajectory trajectory);
 
-    //机械臂根据编码器数据归零，由于有不同编码器，此部分通常由用户完成
-    void return_to_zero();
-
     //发送串口
     void usart_send();
 
@@ -49,9 +46,7 @@ public:
 private:
 
 
-    //各个关节转180度需要的节拍
-    int plu2angel[6];
-    int zeroPlu[6];
+
 
     //执行时间us
     int durations[6];
