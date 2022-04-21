@@ -8,7 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
   control_msgs
   joint_state_publisher
   robot_state_publisher
-  moveit_msgs
   roscpp
   sensor_msgs
   std_msgs

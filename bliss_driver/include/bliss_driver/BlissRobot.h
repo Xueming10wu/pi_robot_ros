@@ -55,27 +55,31 @@ struct PWM
 //状态值
 enum
 {
-    NEW = 0x00,                //新数据，获取轨迹数据的长度
-    PENDING = 0x01,            //悬起态，读取轨迹数据
-    RUNING = 0x02,             //执行态，执行轨迹
-    STOPPED = 0x03,            //静止态，处于数据执行完毕的状态
-    UPLOAD_START = 0x04,       //重新开启Location数据的上传，默认开启
-    UPLOAD_STOP = 0x05,        //关闭Location数据的上传，默认开启
-    PWM_START = 0x06,          //打开PWM
-    PWM_STOP = 0x07,           //关闭PWM
-    USART_START = 0x08,        //开启USART通信中断，并通过中断方式向上位机发送接收到的串口数据，需要包含波特率等信息
-    USART_STOP = 0x09,         //关闭USART通信中断
-    USART_SEND = 0x0a,         //发送数据到串口
-    USART_RECV = 0x0b,         //接收串口数据并上传至上位机
-    PIN0_ON = 0x0c,            //GPIO_0高电平
-    PIN0_OFF = 0x0d,           //GPIO_0低电平
-    PIN1_ON = 0x0e,            //GPIO_1高电平
-    PIN1_OFF = 0x0f,           //GPIO_1低电平
-    TOGGLE_ENABLE_PINS = 0x10, //ENABLE使能翻转，包括夹具，可以做到失力和使能的切换
-    RETURN = 0x11,             //返回零点
-    JOINTS_COUNT = 0x12,       //设置关节数量，默认为6轴，每次连接非6轴机械臂之后2s才能调用此命令，比较影响效率，尽量不要使用此接口，
-                               //如果使用7轴、8轴，可以联系控制器售后，直接在出场时设计成默认7轴的机械臂控制器
-    LOCATION_SETTING = 0x13    //手动设置location的数值，给当前机械臂位置赋值，用于机械臂位置校准,通过location对象即可
+    NEW = 0,                //新数据，获取轨迹数据的长度
+    PENDING = 1,            //悬起态，读取轨迹数据
+    RUNING = 2,             //执行态，执行轨迹
+    STOPPED = 3,            //静止态，处于数据执行完毕的状态
+    UPLOAD_START = 4,       //重新开启Location数据的上传，默认开启
+    UPLOAD_STOP = 5,        //关闭Location数据的上传，默认开启
+    PWM_START = 6,          //打开PWM
+    PWM_STOP = 7,           //关闭PWM
+
+    PIN0_ON = 8,            //GPIO_0高电平
+    PIN0_OFF = 9,           //GPIO_0低电平
+    PIN1_ON = 10,            //GPIO_1高电平
+    PIN1_OFF = 11,           //GPIO_1低电平
+    TOGGLE_ENABLE_PINS = 12, //ENABLE使能翻转
+
+    USART_START = 13,        //开启USART通信中断，并通过中断方式向上位机发送接收到的串口数据，需要包含波特率等信息
+    USART_STOP = 14,         //关闭USART通信中断
+    USART_SEND = 15,         //发送数据到串口
+    USART_RECV = 16,         //接收串口数据并上传至上位机
+
+    RS485_ENABLE = 17,       //开启485芯片
+    RS485_DISABLE = 18,      //关闭485芯片
+
+    JOINTS_COUNT = 19,       //设置关节数量
+    LOCATION_SETTING = 20    //手动设置location的数值，给当前机械臂位置赋值，用于机械臂位置校准
 } ROBOTSTATE;
 
 class BlissRobot
@@ -107,6 +111,9 @@ public:
 
     //启动服务器，并接收数据
     void listening();
+
+    //心跳检测
+    void keepAlive();
 
     //传输轨迹数据
     void sendTrajectory();
@@ -166,6 +173,12 @@ public:
     //ENABLE使能翻转
     void toggle_enable_pins();
 
+    //RS485使能
+    void rs485_enable();
+
+    //RS485失能
+    void rs485_disable();
+
     //编码器归零，即将当前位置作为编码器零点位置，需要配合串口等基础指令
     void encoder_reset();
 
@@ -178,9 +191,18 @@ public:
 
     //接口控制数据
     //struct Point fake_trajectory[1024];
-
     uint16_t NumberOfPoints;                 //轨迹点的数量
-    struct Point trajectory[512];            //路径点，f4 512,   h7 1024
+
+    uint16_t enable_pins;
+    /* 
+     * 使能引脚，包括pwm夹爪，机械臂各个关节
+     * enable_pins格式
+     * 0b 00000000 00000000
+     *    -------p 76543210
+     *    -----夹爪  关节序号
+     */
+
+    struct Point trajectory[512];            //路径点，1代512 2代1024 3代8192
     struct Location location;                //当前机械臂末端位置和状态,用于数据反馈
     struct Location location_setting_handle; //机械臂位置设置实例
     struct UART_InitTypeDef uart_setting;    //串口设置对象
@@ -190,6 +212,12 @@ public:
     volatile int usart_tx_len;  //串口发送数据长度
     uint8_t usartRXBuffer[256]; //串口接收缓存区
     uint8_t usartTXBuffer[256]; //串口发送缓存区
+
+    int encoderValue[8];    //17bit绝对值编码器数据
+
+    bool rs485_flag;        //rs485标志位，默认为关闭
+    bool usart_flag;        //usart标志位，默认为关闭
+
 
 private:
     uint8_t CRC_Recv();

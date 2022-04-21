@@ -61,7 +61,6 @@ namespace MyFunctions
     extern void stop(int sign); //捕获信号量
     extern const bool ok();     //反馈condition变量
 
-    extern int getMax( const int * array, int length);
 } // namespace MyFunctions
 
 

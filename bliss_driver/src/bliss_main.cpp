@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     int bliss_port;
 
     //参数获取
-    nh.param<string>("bliss_ip", bliss_ip, "192.168.31.215");
+    nh.param<string>("bliss_ip", bliss_ip, "127.0.0.1");
     nh.param<int>("bliss_port", bliss_port, 8080);
 
     //准备连接

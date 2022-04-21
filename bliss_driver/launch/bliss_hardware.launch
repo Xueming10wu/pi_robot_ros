@@ -3,7 +3,7 @@
   <!-- bliss -->
   <!-- IP地址 -->
   <!-- <arg name="bliss_ip" default="192.168.31.6" /> -->
-  <arg name="bliss_ip" default="192.168.31.134" />
+  <arg name="bliss_ip" default="192.168.31.8" />
   
   
   <!-- 端口 -->

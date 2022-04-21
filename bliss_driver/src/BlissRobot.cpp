@@ -59,6 +59,15 @@ void BlissRobot::startConstruction()
     //序号从1开始，绝对不可以从0开始，因为会让下位机误判认为是已经接受过的数据，那么下位机只会反馈数据，不会执行这个包的命令
     Sequence = 1;
     cout << "连接成功\n";
+
+    //编码器数据清零
+    memset(encoderValue, 0, sizeof(encoderValue));
+
+    //rs485标志位，默认为关闭
+    rs485_flag = false;
+
+    //usart标志位，默认为关闭
+    usart_flag = false;
 }
 
 
@@ -181,6 +190,11 @@ void BlissRobot::listening()
     }
     cout << "主动断开连接" << endl;
     close(client_fd);
+}
+
+//心跳检测
+void BlissRobot::keepAlive()
+{
 }
 
 //传输轨迹数据
@@ -473,6 +487,8 @@ void BlissRobot::usart_start()
     memcpy(sendBuffer + 2, &uart_setting, sizeof(uart_setting));
     cout << "USART_START\n";
     sendModul();
+
+    usart_flag = true;
 }
 
 //关闭USART通信中断
@@ -483,6 +499,8 @@ void BlissRobot::usart_stop()
     sendBuffer[1] = USART_STOP;
     cout << "USART_STOP\n";
     sendModul();
+
+    usart_flag = false;
 }
 
 //发送数据到串口
@@ -520,7 +538,12 @@ void BlissRobot::usart_recv()
     {
         cout << (char)usartRXBuffer[i];
     }
-    cout << endl;
+    cout << hex << endl;
+    for (int i = 0; i < usart_rx_len; i++)
+    {
+        cout << (int)usartRXBuffer[i] << " ";
+    }
+    cout << dec << endl;
 }
 
 //PIN0高电平
@@ -566,12 +589,41 @@ void BlissRobot::pin1_off()
 //ENABLE使能翻转
 void BlissRobot::toggle_enable_pins()
 {
-    send_len = 3;
+    send_len = 5;
     sendBuffer[0] = Sequence;
     sendBuffer[1] = TOGGLE_ENABLE_PINS;
+    sendBuffer[2] = (enable_pins >> 8) & 0xff;
+    sendBuffer[3] = enable_pins & 0xff;
     cout << "TOGGLE_ENABLE_PINS\n";
     sendModul();
 }
+
+
+//RS485使能
+void BlissRobot::rs485_enable()
+{
+    send_len = 3;
+    sendBuffer[0] = Sequence;
+    sendBuffer[1] = RS485_ENABLE;
+    cout << "RS485_ENABLE\n";
+    sendModul();
+
+    rs485_flag = true;
+}
+
+
+//RS485失能
+void BlissRobot::rs485_disable()
+{
+    send_len = 3;
+    sendBuffer[0] = Sequence;
+    sendBuffer[1] = RS485_DISABLE;
+    cout << "RS485_DISABLE\n";
+    sendModul();
+
+    rs485_flag = false;
+}
+
 
 //编码器归零，通过usart进行操作
 void BlissRobot::encoder_reset()
@@ -600,3 +652,4 @@ void BlissRobot::location_setting()
     cout << "LOCATION_SETTING\n";
     sendModul();
 }
+

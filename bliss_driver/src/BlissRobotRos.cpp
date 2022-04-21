@@ -147,11 +147,7 @@ void BlissRobotRos::extraFeaturesCB(const bliss_driver::ExtraFeaturesConstPtr &m
         blissRobotPtr->pwm_stop();
         break;
 
-    case RETURN:
-        //调用函数
-        return_to_zero();
-        break;
-    
+
     case 0:
         //关闭串口
         blissRobotPtr->usart_stop();
@@ -178,8 +174,35 @@ void BlissRobotRos::extraFeaturesCB(const bliss_driver::ExtraFeaturesConstPtr &m
         blissRobotPtr->pin1_off();
         break;
 
-    case TOGGLE_ENABLE_PINS:
+    case TOGGLE_ENABLE_PINS:    //12
+        /*
+         * 关节序号  0   1   2   3   4   5   6   7     8pwm    全部
+         * 输入数值  1   2   4   8   16  32  64  128   256     (511)0x1ff
+         * 
+         * 可以进行各种使能组合,不过为了方便,建议在终端操作时,采用上述几个数值
+         */
+
+        blissRobotPtr->enable_pins = msg->PSC & 0x01ff;
+        cout << "blissRobotPtr->enable_pins " << blissRobotPtr->enable_pins << endl;
         blissRobotPtr->toggle_enable_pins();
+        break;
+
+    case USART_START: //13
+        //开启串口通信
+        blissRobotPtr->usart_start();
+        break;
+
+    case USART_STOP: //14
+        //关闭USART通信中断
+        blissRobotPtr->usart_stop();
+        break;
+
+    case RS485_ENABLE: //17
+        blissRobotPtr->rs485_enable();
+        break;
+
+    case RS485_DISABLE: //18
+        blissRobotPtr->rs485_disable();
         break;
 
     case LOCATION_SETTING:
@@ -456,10 +479,8 @@ void BlissRobotRos::return_to_zero()
     /*
     //设置一个执行点
     blissRobotPtr->NumberOfPoints = 1;
-
     //先进行清零
     memset(&blissRobotPtr->trajectory[0], 0, PointSize);
-
     //设置执行位置
     // blissRobotPtr->trajectory[0].position[0] = 0;
     // blissRobotPtr->trajectory[0].position[1] = 0;
@@ -469,10 +490,8 @@ void BlissRobotRos::return_to_zero()
     // blissRobotPtr->trajectory[0].position[5] = 0;
     // blissRobotPtr->trajectory[0].position[6] = 0;
     // blissRobotPtr->trajectory[0].position[7] = 0;
-
     //无需运动的关节，将于10ms关闭
     blissRobotPtr->trajectory[0].period = 10000;        
-
     //设置执行速度
     blissRobotPtr->trajectory[0].duration[0] = 5000;
     blissRobotPtr->trajectory[0].duration[1] = 5000;
@@ -482,13 +501,8 @@ void BlissRobotRos::return_to_zero()
     blissRobotPtr->trajectory[0].duration[5] = 5000;
     blissRobotPtr->trajectory[0].duration[6] = 5000;
     blissRobotPtr->trajectory[0].duration[7] = 5000;
-
-
-
-
     //调用blissRobot中的sendTrajectory进行发送数据的操作
     blissRobotPtr->printTrajectory();
-
     //发送数据
     blissRobotPtr->sendTrajectory();
     */
